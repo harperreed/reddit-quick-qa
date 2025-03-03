@@ -10,15 +10,8 @@ The **Reddit Questioner** lets users input a subreddit and a question related to
 
 To get started with the **Reddit Questioner**, follow these simple steps:
 
-### 1. Installation
 
-Make sure you have Python 3.13 or higher installed on your machine. Then, install the required dependencies by running:
-
-```bash
-pip install -r requirements.txt
-```
-
-### 2. Configuration
+### 1. Configuration
 
 You need to set up your environment variables by creating a `.env` file. Use the provided example as a template:
 
@@ -41,20 +34,20 @@ Alternatively, you can export the OpenAI API key as an environment variable:
 export OPENAI_API_KEY="your-api-key"
 ```
 
-### 3. Running the Tool
+### 2. Running the Tool
 
 To run the **Reddit Questioner**, use the following command, replacing the placeholders with your desired subreddit and question:
 
 ```bash
-python reddit_questioner.py "https://www.reddit.com/r/python/.rss" "What are the trending topics in Python?"
+uv reddit_questioner.py python "What are the trending topics in Python?"
 ```
 
-### 4. Arguments
+### 3. Arguments
 
 - `rss_url`: URL of the RSS feed to parse
 - `question`: The question you wish to ask regarding the RSS feed content
 
-### 5. Output
+### 4. Output
 
 The tool will parse the RSS feed, summarize the content, and provide an answer to your question. The output will include the summary and Q&A in a nicely formatted display. 🎉
 
