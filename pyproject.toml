@@ -8,4 +8,5 @@ dependencies = [
     "feedparser>=6.0.11",
     "openai>=1.65.2",
     "python-dotenv>=1.0.1",
+    "rich>=13.9.4",
 ]
