@@ -8,9 +8,24 @@ A CLI tool that parses RSS feeds, combines entries, and uses OpenAI to summarize
 pip install -r requirements.txt
 ```
 
-## Usage
+## Configuration
 
-Set your OpenAI API key as an environment variable:
+Create a `.env` file in the project root:
+
+```bash
+cp .env.example .env
+```
+
+Edit the `.env` file with your OpenAI API key and preferred settings:
+
+```
+OPENAI_API_KEY=your_api_key_here
+OPENAI_MODEL=gpt-4o-mini  # Change to your preferred model
+SYSTEM_PROMPT="Your custom system prompt here"
+USER_PROMPT_TEMPLATE="Your custom user prompt template here with {content} and {question} placeholders"
+```
+
+Alternatively, you can set your OpenAI API key as an environment variable:
 
 ```bash
 export OPENAI_API_KEY="your-api-key"

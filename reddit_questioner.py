@@ -6,6 +6,17 @@ import openai
 import os
 import sys
 from typing import List
+from dotenv import load_dotenv
+from pydantic import BaseModel
+
+# Load environment variables from .env file
+load_dotenv()
+
+class Summary(BaseModel):
+    summary: str
+    questionAnswer: str
+    tone: str
+
 
 def parse_rss(url: str) -> List[str]:
     """Parse RSS feed entries into a list of strings."""
@@ -49,20 +60,30 @@ def query_openai(content: str, question: str) -> str:
     
     client = openai.OpenAI(api_key=api_key)
     
-    system_prompt = "You are a helpful assistant that summarizes content and answers questions about it."
-    user_prompt = f"Here is content from an RSS feed:\n\n{content}\n\nFirst, provide a brief summary of this content. Then, answer this question about it: {question}"
+    # Get model and prompts from environment variables, with defaults
+    model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    system_prompt = os.environ.get(
+        "SYSTEM_PROMPT", 
+        "You are a helpful assistant that summarizes content and answers questions about it."
+    )
+    
+    # Get the user prompt template and format it with content and question
+    user_prompt_template = os.environ.get(
+        "USER_PROMPT_TEMPLATE", 
+        "Here is content from an RSS feed:\n\n{content}\n\nFirst, provide a brief summary of this content. Then, answer this question about it: {question}"
+    )
+    user_prompt = user_prompt_template.format(content=content, question=question)
     
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
+        completion = client.beta.chat.completions.parse(
+            model=model,
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt_template},
             ],
-            temperature=0.3,
-            max_tokens=1024
+            response_format=Summary,
         )
-        return response.choices[0].message.content
+        return completion.choices[0].message.parsed
     except Exception as e:
         print(f"Error calling OpenAI API: {e}", file=sys.stderr)
         sys.exit(1)
