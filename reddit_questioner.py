@@ -8,6 +8,10 @@ import sys
 from typing import List
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from rich.console import Console
+from rich.panel import Panel
+from rich.markdown import Markdown
+from rich.table import Table
 
 # Load environment variables from .env file
 load_dotenv()
@@ -16,6 +20,9 @@ class Summary(BaseModel):
     summary: str
     questionAnswer: str
     tone: str
+    
+# Initialize Rich console
+console = Console()
 
 
 def parse_rss(url: str) -> List[str]:
@@ -94,11 +101,31 @@ def main():
     parser.add_argument("question", help="Question to ask about the RSS feed content")
     args = parser.parse_args()
     
-    entries = parse_rss(args.rss_url)
-    content = mush_content(entries)
-    answer = query_openai(content, args.question)
+    # Show loading message
+    with console.status("[bold green]Fetching RSS feed...", spinner="dots"):
+        entries = parse_rss(args.rss_url)
+        content = mush_content(entries)
     
-    print(answer)
+    with console.status(f"[bold blue]Analyzing content and answering: {args.question}", spinner="point"):
+        answer = query_openai(content, args.question)
+    
+    # Display results with Rich formatting
+    console.print(Panel(
+        Markdown(f"# Summary\n\n{answer.summary}"),
+        title="Content Summary",
+        border_style="green"
+    ))
+    
+    console.print(Panel(
+        Markdown(f"## Question\n\n{args.question}\n\n## Answer\n\n{answer.questionAnswer}"),
+        title="Q&A",
+        border_style="blue"
+    ))
+    
+    # Create a table for metadata
+    table = Table(show_header=False, box=None)
+    table.add_row("Tone", answer.tone)
+    console.print(Panel(table, title="Metadata", border_style="dim"))
 
 if __name__ == "__main__":
     main()
