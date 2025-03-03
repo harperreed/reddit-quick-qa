@@ -12,6 +12,9 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
 from rich.table import Table
+from fake_useragent import UserAgent
+import requests
+import json
 
 # Load environment variables from .env file
 load_dotenv()
@@ -25,36 +28,36 @@ class Summary(BaseModel):
 console = Console()
 
 
-def parse_rss(url: str) -> List[str]:
+def parse_reddit_feed(url: str) -> List[str]:
     """Parse RSS feed entries into a list of strings."""
-    feed = feedparser.parse(url)
+    ua = UserAgent()
     
-    if not feed.entries:
+    r = requests.get(url, headers = {'User-agent': ua.random})
+    reddit_response = r.json()
+    posts = reddit_response['data']['children']
+    posts_count = len(posts)
+
+    # feed = feedparser.parse(url)
+    
+    if posts_count <0:
         print(f"No entries found in feed: {url}", file=sys.stderr)
         sys.exit(1)
     
     entries = []
-    for entry in feed.entries:
-        title = entry.get('title', '')
-        description = entry.get('description', '')
-        content = entry.get('content', [{'value': ''}])[0].get('value', '')
-        
+    for entry in posts:
+        title = entry['data'].get('title', '')
+        content = entry.get('selftext', '')    
         # Use content if available, otherwise use description
-        text = content if content else description
-        entries.append(f"Title: {title}\n\n{text}")
+        entries.append(f"Title: {title}\n\n{content}")
+    
     
     return entries
 
 def mush_content(entries: List[str], max_tokens: int = 16000) -> str:
     """Combine entries into a single text, truncating if necessary."""
+
     combined = "\n\n---\n\n".join(entries)
-    
-    # Very rough approximation of tokens (4 chars ~= 1 token)
-    chars_per_token = 4
-    max_chars = max_tokens * chars_per_token
-    
-    if len(combined) > max_chars:
-        combined = combined[:max_chars] + "... [truncated]"
+    console.print(combined)
     
     return combined
 
@@ -81,13 +84,15 @@ def query_openai(content: str, question: str) -> str:
     )
     user_prompt = user_prompt_template.format(content=content, question=question)
     
+    prompt_messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+    
     try:
         completion = client.beta.chat.completions.parse(
             model=model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt_template},
-            ],
+            messages=prompt_messages,
             response_format=Summary,
         )
         return completion.choices[0].message.parsed
@@ -109,11 +114,11 @@ def main():
         args.question = console.input("[bold yellow]Enter your question about the subreddit: [/]")
     
     # Construct the RSS URL from the subreddit name
-    rss_url = f"https://www.reddit.com/r/{args.subreddit}.rss"
+    reddit_feed_url = f"https://www.reddit.com/r/{args.subreddit}.json?sort=top&t=week"
     
     # Show loading message
     with console.status(f"[bold green]Fetching content from r/{args.subreddit}...", spinner="dots"):
-        entries = parse_rss(rss_url)
+        entries = parse_reddit_feed(reddit_feed_url)
         content = mush_content(entries)
     
     # Display the titles of the feed entries
