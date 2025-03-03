@@ -97,9 +97,16 @@ def query_openai(content: str, question: str) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="Parse Reddit content, summarize it, and answer questions")
-    parser.add_argument("subreddit", help="Name of the subreddit (without r/ prefix)")
-    parser.add_argument("question", help="Question to ask about the subreddit content")
+    parser.add_argument("subreddit", nargs="?", help="Name of the subreddit (without r/ prefix)")
+    parser.add_argument("question", nargs="?", help="Question to ask about the subreddit content")
     args = parser.parse_args()
+    
+    # If arguments are missing, prompt for them
+    if not args.subreddit:
+        args.subreddit = console.input("[bold yellow]Enter subreddit name (without r/ prefix): [/]")
+    
+    if not args.question:
+        args.question = console.input("[bold yellow]Enter your question about the subreddit: [/]")
     
     # Construct the RSS URL from the subreddit name
     rss_url = f"https://www.reddit.com/r/{args.subreddit}.rss"
@@ -108,6 +115,14 @@ def main():
     with console.status(f"[bold green]Fetching content from r/{args.subreddit}...", spinner="dots"):
         entries = parse_rss(rss_url)
         content = mush_content(entries)
+    
+    # Display the titles of the feed entries
+    console.print("\n[bold cyan]Found these posts:[/]")
+    for i, entry in enumerate(entries, 1):
+        # Extract title from each entry (assuming format "Title: something\n\nContent...")
+        title = entry.split("\n\n")[0].replace("Title: ", "")
+        console.print(f"  {i}. [italic]{title}[/]")
+    console.print()
     
     with console.status(f"[bold blue]Analyzing r/{args.subreddit} and answering: {args.question}", spinner="point"):
         answer = query_openai(content, args.question)
