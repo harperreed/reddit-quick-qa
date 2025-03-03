@@ -96,22 +96,25 @@ def query_openai(content: str, question: str) -> str:
         sys.exit(1)
 
 def main():
-    parser = argparse.ArgumentParser(description="Parse RSS feed, summarize content, and answer questions")
-    parser.add_argument("rss_url", help="URL of the RSS feed to parse")
-    parser.add_argument("question", help="Question to ask about the RSS feed content")
+    parser = argparse.ArgumentParser(description="Parse Reddit content, summarize it, and answer questions")
+    parser.add_argument("subreddit", help="Name of the subreddit (without r/ prefix)")
+    parser.add_argument("question", help="Question to ask about the subreddit content")
     args = parser.parse_args()
     
+    # Construct the RSS URL from the subreddit name
+    rss_url = f"https://www.reddit.com/r/{args.subreddit}.rss"
+    
     # Show loading message
-    with console.status("[bold green]Fetching RSS feed...", spinner="dots"):
-        entries = parse_rss(args.rss_url)
+    with console.status(f"[bold green]Fetching content from r/{args.subreddit}...", spinner="dots"):
+        entries = parse_rss(rss_url)
         content = mush_content(entries)
     
-    with console.status(f"[bold blue]Analyzing content and answering: {args.question}", spinner="point"):
+    with console.status(f"[bold blue]Analyzing r/{args.subreddit} and answering: {args.question}", spinner="point"):
         answer = query_openai(content, args.question)
     
     # Display results with Rich formatting
     console.print(Panel(
-        Markdown(f"# Summary\n\n{answer.summary}"),
+        Markdown(f"# r/{args.subreddit} Summary\n\n{answer.summary}"),
         title="Content Summary",
         border_style="green"
     ))
